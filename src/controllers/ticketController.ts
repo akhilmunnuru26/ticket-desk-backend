@@ -42,7 +42,6 @@ export const createTicket = async (req: Request, res: Response) => {
 };
 
 // PATCH /tickets/:id
-// PATCH /tickets/:id
 export const updateTicket = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
