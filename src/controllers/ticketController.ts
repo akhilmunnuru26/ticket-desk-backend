@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../db';
-import { tickets, users } from '../db/schema';
+import { tickets, users, comments } from '../db/schema';
+
 import { eq, desc } from 'drizzle-orm';
 
 // GET /tickets
@@ -41,27 +42,37 @@ export const createTicket = async (req: Request, res: Response) => {
 };
 
 // PATCH /tickets/:id
+// PATCH /tickets/:id
 export const updateTicket = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, assignedToUserId } = req.body;
 
+    // 1. Create a dynamic update object
+    const updateData: any = { updatedAt: new Date() };
+    
+    // 2. Only add fields to the update object if they exist in the request
+    if (status !== undefined) {
+      updateData.status = status;
+    }
+    
+    // We check against undefined so we can still allow null (for "Unassigned")
+    if (assignedToUserId !== undefined) {
+      updateData.assignedToUserId = assignedToUserId;
+    }
+
     const updatedTicket = await db.update(tickets)
-      .set({ 
-        status, 
-        assignedToUserId, 
-        updatedAt: new Date() 
-      })
+      .set(updateData) // 3. Pass the clean object to Drizzle
       .where(eq(tickets.id, parseInt(id as string, 10)))
       .returning();
 
     res.json(updatedTicket[0]);
   } catch (error) {
+    console.error("🔥 UPDATE TICKET ERROR:", error);
     res.status(500).json({ error: 'Failed to update ticket' });
   }
 };
 
-import { comments } from '../db/schema'; // Ensure you import the comments schema at the top
 
 // GET /tickets/:id
 export const getTicketById = async (req: Request, res: Response) => {
