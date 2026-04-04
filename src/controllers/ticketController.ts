@@ -60,3 +60,63 @@ export const updateTicket = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to update ticket' });
   }
 };
+
+import { comments } from '../db/schema'; // Ensure you import the comments schema at the top
+
+// GET /tickets/:id
+export const getTicketById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const ticket = await db.select()
+      .from(tickets)
+      .where(eq(tickets.id, parseInt(id as string, 10)));
+      
+    if (ticket.length === 0) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+    
+    res.json(ticket[0]);
+  } catch (error) {
+    console.error("🔥 GET TICKET BY ID ERROR:", error);
+    res.status(500).json({ error: 'Failed to fetch ticket' });
+  }
+};
+
+// GET /tickets/:id/comments
+export const getTicketComments = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const ticketComments = await db.select()
+      .from(comments)
+      .where(eq(comments.ticketId, parseInt(id as string, 10)))
+      // Typically, you want the oldest comments at the top, like a chat history
+      .orderBy(comments.createdAt); 
+      
+    res.json(ticketComments);
+  } catch (error) {
+    console.error("🔥 GET COMMENTS ERROR:", error);
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+};
+
+// POST /tickets/:id/comments
+export const createTicketComment = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const newComment = await db.insert(comments).values({
+      ticketId: parseInt(id as string, 10),
+      message
+    }).returning();
+
+    res.status(201).json(newComment[0]);
+  } catch (error) {
+    console.error("🔥 CREATE COMMENT ERROR:", error);
+    res.status(500).json({ error: 'Failed to create comment' });
+  }
+};
