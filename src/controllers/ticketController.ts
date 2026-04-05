@@ -18,28 +18,33 @@ export const getTickets = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to fetch tickets' });
   }
 };
+
 // POST /tickets
 export const createTicket = async (req: Request, res: Response) => {
   try {
-    const { title, description, priority } = req.body;
+    // 1. Extract assignedToUserId from the incoming request
+    const { title, description, priority, assignedToUserId } = req.body;
     
     // Basic validation
     if (!title || !description) {
        return res.status(400).json({ error: 'Title and description are required' });
     }
 
+    // 2. Add it to the database insert payload
     const newTicket = await db.insert(tickets).values({
       title,
       description,
       priority: priority || 'low',
-      status: 'open'
-    }).returning(); // .returning() tells Postgres to send back the created row
+      status: 'open',
+      assignedToUserId: assignedToUserId || null 
+    }).returning(); 
 
     res.status(201).json(newTicket[0]);
   } catch (error) {
     res.status(500).json({ error: 'Failed to create ticket' });
   }
 };
+
 
 // PATCH /tickets/:id
 export const updateTicket = async (req: Request, res: Response) => {
